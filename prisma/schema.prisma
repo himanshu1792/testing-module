@@ -1,0 +1,93 @@
+// Prisma 7 schema for the headless testing app.
+// Generator uses "prisma-client" (Prisma 7) with output to generated/ (NOT node_modules).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+// Prisma 7: the connection URL lives in prisma.config.ts (datasource.url) and the
+// schema is applied with `prisma db push` (NOT `prisma migrate`), so there is no
+// _prisma_migrations table. The runtime client connects via the PrismaPg adapter
+// (lib/prisma.ts).
+datasource db {
+  provider = "postgresql"
+}
+
+// A target application under test. Credentials are encrypted at rest
+// (AES-256-GCM via lib/encryption.ts).
+model Application {
+  id           String       @id @default(cuid())
+  tenantId     String       @default("default")
+  name         String
+  testUrl      String
+  testUsername String // encrypted
+  testPassword String // encrypted
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  repositories Repository[]
+  tasks        TestTask[]
+
+  @@index([tenantId])
+}
+
+// A git destination (GitHub or Azure DevOps) where generated test PRs are opened.
+model Repository {
+  id            String      @id @default(cuid())
+  tenantId      String      @default("default")
+  provider      String // "github" | "ado"
+  repoUrl       String
+  pat           String // encrypted Personal Access Token
+  organization  String? // required for ADO, null for GitHub
+  outputFolder  String // e.g. "tests/my-web-app"
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  tasks         TestTask[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([tenantId])
+  @@index([applicationId])
+}
+
+// A unit of testing work AND its execution record. Each submitted task is one
+// run. The worker claims queued rows with SELECT ... FOR UPDATE SKIP LOCKED.
+//
+// status:  queued -> running -> completed | failed
+// Re-running = create a new TestTask referencing the same app/repo/input.
+model TestTask {
+  id       String @id @default(cuid())
+  tenantId String @default("default")
+
+  kind      String // "e2e" | "exploratory"
+  inputText String // e2e: plain-English scenario. exploratory: target URL.
+  adoTicket String? // optional ADO work item ref for acceptance criteria
+
+  // Queue / claim columns
+  status   String    @default("queued") // queued | running | completed | failed
+  stage    String? // active pipeline stage, e.g. "script_generator"
+  attempts Int       @default(0)
+  lockedBy String? // worker id holding the claim
+  lockedAt DateTime? // when the claim was taken (stale-claim sweep)
+
+  // Output columns (populated as the pipeline progresses)
+  refinedPrompt   String?
+  testPlan        String?
+  generatedScript String?
+  prUrl           String?
+  errorMessage    String?
+
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  repositoryId  String
+  repository    Repository  @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  startedAt  DateTime?
+  finishedAt DateTime?
+
+  @@index([status, createdAt])
+  @@index([tenantId])
+  @@index([applicationId])
+}

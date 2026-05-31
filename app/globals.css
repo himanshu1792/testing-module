@@ -1,0 +1,1130 @@
+@import "tailwindcss";
+
+/* ============================================================
+   AI Automation Tester — Design Tokens (Tailwind v4 @theme)
+   Calm, professional developer-tool dark theme.
+   Near-black canvas, indigo accent, accessible focus rings.
+   ============================================================ */
+@theme {
+  /* Surfaces & structure — layered near-black with subtle blue cast */
+  --color-bg: #080a0f;
+  --color-bg-elevated: #0c0f16;
+  --color-surface: #11141d;
+  --color-surface-hover: #171b27;
+  --color-surface-2: #181c28; /* a second elevation for inner panels */
+  --color-border: #232838;
+  --color-border-strong: #333b52;
+
+  /* Hairline borders — light strokes for a crisp, modern edge */
+  --hairline: rgb(255 255 255 / 0.06);
+  --hairline-strong: rgb(255 255 255 / 0.1);
+
+  /* Text — muted/faint audited to clear 4.5:1 on bg and surfaces */
+  --color-text: #edf0f7;
+  --color-muted: #a3abc0; /* ~8.7:1 on bg */
+  --color-faint: #8a93ab; /* ~6.4:1 on bg, ~6.0:1 on surface */
+
+  /* Brand accent — indigo */
+  --color-primary: #6366f1;
+  --color-primary-hover: #7c83f7;
+  --color-primary-active: #585bdd;
+  --color-primary-soft: #1a1c33;
+  --color-on-primary: #ffffff;
+  --color-ring: #818cf8;
+
+  /* Status palette */
+  --color-queued: #b8a4fb; /* violet — waiting */
+  --color-running: #4cc4f9; /* cyan — in progress */
+  --color-done: #3ddba2; /* green — done */
+  --color-failed: #f98080; /* red — failed */
+
+  /* Semantic */
+  --color-danger: #f98080;
+  --color-danger-soft: #2a1418;
+
+  /* Typography — wired to the next/font CSS variables from layout.tsx */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono",
+    "JetBrains Mono", "Fira Code", Consolas, "Liberation Mono", monospace;
+
+  /* Radii — 16px lead radius per the modern-dark reference */
+  --radius-sm: 7px;
+  --radius-md: 11px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Shadows (tuned for dark) */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-md: 0 8px 24px -6px rgb(0 0 0 / 0.55);
+  --shadow-lg: 0 18px 40px -12px rgb(0 0 0 / 0.7);
+  --shadow-glow: 0 0 0 1px rgb(99 102 241 / 0.25),
+    0 6px 24px -6px rgb(99 102 241 / 0.35);
+
+  /* Signature easing for micro-interactions */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ============================================================
+   Base / reset
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  letter-spacing: 0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  /* Subtle radial depth so the canvas isn't flat black */
+  background-image: radial-gradient(
+      1200px 600px at 50% -10%,
+      rgb(99 102 241 / 0.07),
+      transparent 70%
+    ),
+    radial-gradient(900px 500px at 100% 0%, rgb(56 189 248 / 0.04), transparent 65%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background-color: rgb(99 102 241 / 0.35);
+  color: var(--color-text);
+}
+
+/* Respect reduced-motion globally: collapse all transitions/animations.
+   Individual components also guard their bespoke animations below. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Numeric / monospace alignment helper for time & ID columns. */
+.tf-tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Thin, dark-themed scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-faint);
+}
+
+/* ============================================================
+   Layout — shell, container, header
+   ============================================================ */
+.tf-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  width: 100%;
+}
+
+.tf-container {
+  width: 100%;
+  max-width: 1160px;
+  margin-inline: auto;
+  padding-inline: 28px;
+  padding-block: 36px 72px;
+}
+
+/* ------------------------------------------------------------
+   Top app bar — full-bleed, sticky, translucent.
+   Brand lockup on the left, tab navigation on the right.
+   ------------------------------------------------------------ */
+.tf-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  background-color: rgb(8 10 15 / 0.72);
+  backdrop-filter: saturate(140%) blur(12px);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
+  border-bottom: 1px solid var(--hairline);
+}
+
+/* Full-bleed bar: brand hugs the extreme left, tabs hug the extreme right.
+   No max-width / margin-inline here on purpose — only the page content
+   (.tf-container) stays centered. */
+.tf-topbar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  padding: 12px 32px;
+  min-height: 68px;
+}
+
+/* Brand — gradient app mark + wordmark / tagline */
+.tf-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.tf-brand__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    150deg,
+    var(--color-primary),
+    var(--color-primary-active)
+  );
+  color: var(--color-on-primary);
+  box-shadow: 0 4px 14px -4px rgb(99 102 241 / 0.55),
+    0 1px 0 0 rgb(255 255 255 / 0.14) inset;
+}
+
+.tf-brand__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tf-brand__name {
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  /* Subtle gradient sheen on the wordmark */
+  background: linear-gradient(168deg, #ffffff 0%, #d2d7ea 58%, #aab1ce 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.tf-brand__tag {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: var(--color-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Per-view intro — the page's single h1 + one-line description */
+.tf-pageintro {
+  margin-bottom: 28px;
+}
+
+.tf-pageintro__title {
+  margin: 0 0 6px;
+  font-size: clamp(1.4rem, 1.1rem + 1vw, 1.7rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.tf-pageintro__desc {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--color-muted);
+  max-width: 66ch;
+}
+
+/* Stack the bar on narrow screens: brand over a full-width tab strip */
+@media (max-width: 820px) {
+  .tf-topbar__inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 14px 20px;
+    min-height: 0;
+  }
+  .tf-tabs {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+  .tf-container {
+    padding-inline: 20px;
+    padding-block: 28px 64px;
+  }
+}
+
+/* ============================================================
+   Tabs
+   ============================================================ */
+.tf-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 4px;
+  padding: 5px;
+  margin-bottom: 0;
+  background-color: var(--color-surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.tf-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 160ms var(--ease-out-expo), background-color 160ms
+      var(--ease-out-expo);
+  white-space: nowrap;
+}
+
+/* Tab glyph inherits muted tone, brightens with the label on active/hover */
+.tf-tab svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--color-faint);
+  transition: color 160ms var(--ease-out-expo);
+}
+
+.tf-tab:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-hover);
+}
+
+.tf-tab:hover svg {
+  color: var(--color-muted);
+}
+
+.tf-tab:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.tf-tab--active {
+  color: var(--color-text);
+  background-color: var(--color-primary-soft);
+  box-shadow: inset 0 0 0 1px rgb(99 102 241 / 0.4),
+    0 1px 2px 0 rgb(0 0 0 / 0.3);
+}
+
+.tf-tab--active svg {
+  color: var(--color-primary-hover);
+}
+
+.tf-tab--active:hover {
+  color: var(--color-text);
+  background-color: var(--color-primary-soft);
+}
+
+/* Animated active indicator — a thin accent underline that scales in */
+.tf-tab--active::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 4px;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-primary-hover),
+    transparent
+  );
+  transform: scaleX(1);
+  transform-origin: center;
+  animation: tf-indicator 320ms var(--ease-out-expo);
+}
+
+@keyframes tf-indicator {
+  from {
+    opacity: 0;
+    transform: scaleX(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+/* ============================================================
+   Card
+   ============================================================ */
+.tf-card {
+  position: relative;
+  background-color: var(--color-surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+}
+
+/* Subtle top-edge sheen for depth without a heavy border */
+.tf-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding-top: 1px;
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.07),
+    transparent 64px
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.tf-card + .tf-card {
+  margin-top: 20px;
+}
+
+/* Card header — icon chip + title/description stack on an 8px rhythm */
+.tf-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.tf-card-head__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.tf-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    160deg,
+    var(--color-primary-soft),
+    var(--color-surface-2)
+  );
+  border: 1px solid var(--hairline-strong);
+  color: var(--color-primary-hover);
+}
+
+.tf-card-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.tf-card-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+/* When a title stands alone (no head wrapper) keep its legacy spacing */
+.tf-card > .tf-card-title {
+  margin-bottom: 4px;
+}
+
+.tf-card-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+
+.tf-card > .tf-card-desc {
+  margin-bottom: 20px;
+}
+
+.tf-card-desc:last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================================
+   Forms
+   ============================================================ */
+.tf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.tf-field:last-child {
+  margin-bottom: 0;
+}
+
+.tf-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-text);
+}
+
+/* Required-field marker — accessible (carries label text for SRs) */
+.tf-req {
+  color: var(--color-primary-hover);
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* "Optional" pill sits at the end of a label */
+.tf-optional {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-faint);
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+}
+
+/* Shared field styling */
+.tf-input,
+.tf-select,
+.tf-textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--color-text);
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 11px 13px; /* ~44px min target with line-height */
+  min-height: 44px;
+  transition: border-color 160ms var(--ease-out-expo), box-shadow 160ms
+      var(--ease-out-expo), background-color 160ms var(--ease-out-expo);
+  appearance: none;
+}
+
+.tf-input::placeholder,
+.tf-textarea::placeholder {
+  color: var(--color-faint);
+}
+
+.tf-input:hover,
+.tf-select:hover,
+.tf-textarea:hover {
+  border-color: var(--color-border-strong);
+}
+
+.tf-input:focus,
+.tf-select:focus,
+.tf-textarea:focus,
+.tf-input:focus-visible,
+.tf-select:focus-visible,
+.tf-textarea:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  background-color: var(--color-surface);
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.25),
+    0 1px 2px 0 rgb(0 0 0 / 0.3);
+}
+
+.tf-input:disabled,
+.tf-select:disabled,
+.tf-textarea:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tf-textarea {
+  min-height: 132px;
+  resize: vertical;
+  line-height: 1.6;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+/* Custom caret for selects (Lucide chevron-down, muted stroke) */
+.tf-select {
+  padding-right: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a3abc0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  cursor: pointer;
+}
+
+.tf-select option {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+.tf-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.tf-hint svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  margin-top: 2px;
+  color: var(--color-faint);
+}
+
+.tf-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--color-danger);
+  line-height: 1.45;
+}
+
+.tf-error svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.tf-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+/* Let fields inside a row grow evenly */
+.tf-row > .tf-field {
+  flex: 1 1 220px;
+  margin-bottom: 0;
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.tf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: background-color 140ms ease, border-color 140ms ease,
+    color 140ms ease, box-shadow 140ms ease, transform 80ms ease;
+}
+
+.tf-btn:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.tf-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.tf-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Min 44px touch target without bloating visual height */
+.tf-btn {
+  min-height: 44px;
+}
+
+.tf-btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+/* Inline spinner used during async submit (Lucide Loader2) */
+.tf-spin {
+  animation: tf-spin 0.7s linear infinite;
+}
+
+@keyframes tf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tf-spin {
+    animation-duration: 1.4s;
+  }
+}
+
+/* Primary — accent fill */
+.tf-btn--primary {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.08) inset,
+    0 4px 14px -4px rgb(99 102 241 / 0.5);
+}
+
+.tf-btn--primary:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.12) inset,
+    0 6px 20px -4px rgb(99 102 241 / 0.6);
+}
+
+.tf-btn--primary:active:not(:disabled) {
+  background-color: var(--color-primary-active);
+  border-color: var(--color-primary-active);
+}
+
+/* Ghost — subtle / outline */
+.tf-btn--ghost {
+  background-color: transparent;
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+
+.tf-btn--ghost:hover:not(:disabled) {
+  background-color: var(--color-surface-hover);
+  border-color: var(--color-faint);
+}
+
+.tf-btn--ghost:active:not(:disabled) {
+  background-color: var(--color-surface);
+}
+
+/* ============================================================
+   Table
+   ============================================================ */
+/* Console-style table wrapped in a hairline frame */
+.tf-table-wrap {
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background-color: var(--color-bg-elevated);
+}
+
+.tf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.tf-th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-faint);
+  background-color: var(--color-surface);
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--hairline-strong);
+  white-space: nowrap;
+}
+
+.tf-td {
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--color-text);
+  vertical-align: middle;
+}
+
+.tf-table tbody tr:last-child .tf-td {
+  border-bottom: none;
+}
+
+.tf-table tbody tr {
+  position: relative;
+  transition: background-color 140ms var(--ease-out-expo);
+}
+
+.tf-table tbody tr:hover .tf-td {
+  background-color: var(--color-surface-hover);
+}
+
+/* Left accent rail revealed on row hover for an ops-console feel */
+.tf-table tbody tr .tf-td:first-child {
+  box-shadow: inset 2px 0 0 -1px transparent;
+  transition: box-shadow 140ms var(--ease-out-expo);
+}
+
+.tf-table tbody tr:hover .tf-td:first-child {
+  box-shadow: inset 2px 0 0 0 var(--color-primary);
+}
+
+/* Monospace cell for IDs / code-ish values */
+.tf-mono {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-muted);
+}
+
+/* ============================================================
+   Status badges
+   ============================================================ */
+.tf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  padding: 5px 11px 5px 9px;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+/* Status glyph carries the badge color */
+.tf-badge svg {
+  flex: none;
+}
+
+.tf-badge--queued {
+  color: var(--color-queued);
+  background-color: rgb(184 164 251 / 0.12);
+  border-color: rgb(184 164 251 / 0.3);
+}
+
+.tf-badge--running {
+  color: var(--color-running);
+  background-color: rgb(76 196 249 / 0.12);
+  border-color: rgb(76 196 249 / 0.35);
+  box-shadow: 0 0 0 1px rgb(76 196 249 / 0.05),
+    0 0 12px -2px rgb(76 196 249 / 0.35);
+}
+
+.tf-badge--done {
+  color: var(--color-done);
+  background-color: rgb(61 219 162 / 0.12);
+  border-color: rgb(61 219 162 / 0.3);
+}
+
+.tf-badge--failed {
+  color: var(--color-failed);
+  background-color: rgb(249 128 128 / 0.12);
+  border-color: rgb(249 128 128 / 0.3);
+}
+
+/* ============================================================
+   Segmented control
+   ============================================================ */
+.tf-segmented {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 3px;
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.tf-segmented__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 500;
+  min-height: 36px;
+  padding: 7px 15px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 160ms var(--ease-out-expo), background-color 160ms
+      var(--ease-out-expo), box-shadow 160ms var(--ease-out-expo);
+}
+
+.tf-segmented__opt svg {
+  flex: none;
+  color: var(--color-faint);
+  transition: color 160ms var(--ease-out-expo);
+}
+
+.tf-segmented__opt:hover {
+  color: var(--color-text);
+}
+
+.tf-segmented__opt:hover svg {
+  color: var(--color-muted);
+}
+
+.tf-segmented__opt--active svg {
+  color: var(--color-on-primary);
+}
+
+.tf-segmented__opt:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.tf-segmented__opt--active {
+  color: var(--color-text);
+  background-color: var(--color-primary);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.35),
+    0 1px 0 0 rgb(255 255 255 / 0.1) inset;
+}
+
+.tf-segmented__opt--active:hover {
+  color: var(--color-on-primary);
+  background-color: var(--color-primary-hover);
+}
+
+/* ============================================================
+   Misc — links & empty state
+   ============================================================ */
+.tf-link {
+  color: var(--color-primary-hover);
+  text-decoration: none;
+  font-weight: 500;
+  border-radius: 3px;
+  transition: color 120ms ease;
+}
+
+.tf-link:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.tf-link:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.tf-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  padding: 48px 24px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background-color: rgb(255 255 255 / 0.012);
+}
+
+/* ============================================================
+   Empty state — icon-bearing, helpful messaging
+   ============================================================ */
+.tf-emptystate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 4px;
+  padding: 52px 24px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background-image: radial-gradient(
+    420px 200px at 50% 0%,
+    rgb(99 102 241 / 0.05),
+    transparent 70%
+  );
+}
+
+.tf-emptystate__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    160deg,
+    var(--color-surface-2),
+    var(--color-bg-elevated)
+  );
+  border: 1px solid var(--hairline-strong);
+  color: var(--color-primary-hover);
+}
+
+.tf-emptystate__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.tf-emptystate__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.tf-emptystate__desc {
+  margin: 0;
+  max-width: 44ch;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--color-muted);
+}
+
+/* ============================================================
+   Skeleton loaders — shimmer placeholders for SWR fetches
+   ============================================================ */
+.tf-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface-2);
+}
+
+.tf-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.06),
+    transparent
+  );
+  animation: tf-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes tf-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tf-skeleton::after {
+    animation: none;
+  }
+  /* Provide a static, perceptible tone instead of a moving shimmer */
+  .tf-skeleton {
+    background-color: var(--color-surface-hover);
+  }
+}
+
+/* Skeleton table rows mirror the real table cadence */
+.tf-skel-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.tf-skel-row:last-child {
+  border-bottom: none;
+}
+
+/* Inline status / meta chips used in tables */
+.tf-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-muted);
+}
+
+.tf-meta svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--color-faint);
+}
+
+/* Kind tag (E2E / Exploratory) — quiet pill */
+.tf-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface-2);
+  border: 1px solid var(--hairline);
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.tf-tag svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  color: var(--color-faint);
+}
