@@ -7,6 +7,9 @@ import {
   validateAdoPat,
   type ValidationResult,
 } from "@/lib/repositories";
+import { getApplication } from "@/lib/applications";
+import { workspacePathFor } from "@/lib/workspace";
+import { syncWorkspace } from "@/lib/workspace-git";
 
 /**
  * Repositories API — thin DB-only layer over lib/repositories.
@@ -37,7 +40,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { provider, repoUrl, pat, organization, outputFolder, applicationId } =
+    const { provider, repoUrl, pat, organization, outputFolder, branch, applicationId } =
       body ?? {};
 
     // Validate the PAT FIRST — never persist credentials we can't authenticate.
@@ -69,8 +72,29 @@ export async function POST(request: Request) {
       pat,
       organization: organization ?? null,
       outputFolder,
+      branch: branch ?? "main",
       applicationId,
     });
+
+    // Best-effort warm clone — fire-and-forget. MUST NOT fail the request or
+    // roll back the row. The error is never logged with its object (it could
+    // carry the token); syncWorkspace redacts internally, but we keep it plain.
+    void (async () => {
+      try {
+        const app = await getApplication(applicationId);
+        if (!app) return;
+        await syncWorkspace({
+          workspacePath: workspacePathFor(app.name),
+          repoUrl,
+          provider,
+          pat,
+          organization: organization ?? null,
+          branch: branch ?? "main",
+        });
+      } catch {
+        console.warn("[repositories] warm clone failed (non-fatal)");
+      }
+    })();
 
     return NextResponse.json(
       { repository: { id: repository.id, provider: repository.provider, repoUrl: repository.repoUrl } },

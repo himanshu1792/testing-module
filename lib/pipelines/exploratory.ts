@@ -2,6 +2,8 @@ import { prisma } from "../prisma";
 import { getTask } from "../tasks";
 import { getApplication } from "../applications";
 import { getRepository } from "../repositories";
+import { workspacePathFor } from "../workspace";
+import { syncWorkspace } from "../workspace-git";
 import { runPlanner } from "../agents/regression/planner";
 import { runGenerator } from "../agents/regression/generator";
 import { runHealer } from "../agents/regression/healer";
@@ -40,6 +42,8 @@ export async function runExploratoryPipeline(taskId: string): Promise<void> {
     console.log(`[${taskId}] ${stage}: ${message}`);
   };
 
+  const workspacePath = workspacePathFor(application.name);
+
   const ctx: HeadlessContext = {
     taskId,
     kind: "exploratory",
@@ -55,8 +59,21 @@ export async function runExploratoryPipeline(taskId: string): Promise<void> {
     outputFolder: repository.outputFolder,
     repositoryPat: repository.pat,
     repositoryOrganization: repository.organization,
+    branch: repository.branch,
+    workspacePath,
     log,
   };
+
+  // --- Pre-hook: stash local changes + pull latest from the target branch ---
+  ctx.log("workspace_sync", `Syncing ${workspacePath} (branch ${repository.branch})`);
+  await syncWorkspace({
+    workspacePath,
+    repoUrl: repository.repoUrl,
+    provider: repository.provider,
+    pat: repository.pat,
+    organization: repository.organization,
+    branch: repository.branch,
+  });
 
   // --- Planner ---
   const testPlan = await runPlanner(ctx);

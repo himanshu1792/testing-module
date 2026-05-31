@@ -1128,3 +1128,251 @@ body {
   flex: none;
   color: var(--color-faint);
 }
+
+/* ============================================================
+   Run button (Previous Runs table) — compact ghost button.
+   Slightly tighter than the default .tf-btn so it sits neatly
+   in a table cell while keeping a 40px+ touch target.
+   ============================================================ */
+.tf-runbtn {
+  padding: 8px 14px;
+  min-height: 40px;
+  font-size: 0.84rem;
+}
+
+/* When disabled we still want the title tooltip on hover, so we keep
+   pointer-events live (the base .tf-btn:disabled drops them) and signal
+   non-interactivity via cursor + opacity instead. */
+.tf-runbtn:disabled,
+.tf-runbtn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: auto;
+}
+
+.tf-runbtn:disabled:hover,
+.tf-runbtn[aria-disabled="true"]:hover {
+  background-color: transparent;
+  border-color: var(--color-border-strong);
+}
+
+/* ============================================================
+   Modal — backdrop + panel (local script-run dialog)
+   ============================================================ */
+.tf-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-color: rgb(4 6 10 / 0.66);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: tf-modal-fade 180ms var(--ease-out-expo);
+}
+
+.tf-modal__panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 760px;
+  max-height: min(86dvh, 720px);
+  background-color: var(--color-surface);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: tf-modal-pop 220ms var(--ease-out-expo);
+}
+
+@keyframes tf-modal-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes tf-modal-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tf-modal__backdrop,
+  .tf-modal__panel {
+    animation: none;
+  }
+}
+
+.tf-modal__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.tf-modal__headtext {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.tf-modal__title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+.tf-modal__sub {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Square icon-only button (modal close) */
+.tf-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  margin-left: auto;
+  width: 40px;
+  height: 40px;
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: color 140ms ease, background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.tf-iconbtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.tf-iconbtn:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-hover);
+  border-color: var(--color-border-strong);
+}
+
+.tf-iconbtn:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* Prominent "watch the browser" hint banner */
+.tf-runhint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 20px 0;
+  padding: 11px 14px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--color-text);
+  background-color: var(--color-primary-soft);
+  border: 1px solid rgb(99 102 241 / 0.4);
+  border-radius: var(--radius-md);
+}
+
+.tf-runhint svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--color-primary-hover);
+}
+
+/* Streaming log console — monospaced, scrollable, capped height */
+.tf-console {
+  flex: 1 1 auto;
+  min-height: 200px;
+  max-height: 360px;
+  overflow-y: auto;
+  margin: 16px 20px 0;
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--color-muted);
+  background-color: var(--color-bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tf-console__line {
+  font-variant-numeric: tabular-nums;
+}
+
+.tf-console__line--err {
+  color: var(--color-danger);
+}
+
+.tf-console__empty {
+  color: var(--color-faint);
+  font-style: italic;
+}
+
+/* Footer: status on the left, actions on the right */
+.tf-modal__foot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  margin-top: 16px;
+  border-top: 1px solid var(--hairline);
+}
+
+.tf-runstatus {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tf-runstatus__msg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.tf-runstatus__msg svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.tf-runstatus__msg--run {
+  color: var(--color-running);
+}
+
+.tf-runstatus__msg--ok {
+  color: var(--color-done);
+}
+
+.tf-runstatus__msg--bad {
+  color: var(--color-danger);
+}
+
+.tf-modal__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}

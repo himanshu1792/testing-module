@@ -205,6 +205,7 @@ function AddApplicationCard() {
 function AddRepositoryCard({ applications }: { applications: Application[] }) {
   const [provider, setProvider] = useState<Provider>("github");
   const [repoUrl, setRepoUrl] = useState("");
+  const [branch, setBranch] = useState("main");
   const [pat, setPat] = useState("");
   const [organization, setOrganization] = useState("");
   const [outputFolder, setOutputFolder] = useState("");
@@ -214,6 +215,7 @@ function AddRepositoryCard({ applications }: { applications: Application[] }) {
   const orgRequired = provider === "ado";
   const canSubmit =
     repoUrl.trim() &&
+    branch.trim().length > 0 &&
     pat.trim() &&
     outputFolder.trim() &&
     applicationId &&
@@ -234,6 +236,7 @@ function AddRepositoryCard({ applications }: { applications: Application[] }) {
           organization: orgRequired ? organization : null,
           outputFolder,
           applicationId,
+          branch: branch.trim(),
         }),
       });
       if (!res.ok) {
@@ -244,6 +247,7 @@ function AddRepositoryCard({ applications }: { applications: Application[] }) {
       }
       toast.success("Repository connected");
       setRepoUrl("");
+      setBranch("main");
       setPat("");
       setOrganization("");
       setOutputFolder("");
@@ -325,6 +329,27 @@ function AddRepositoryCard({ applications }: { applications: Application[] }) {
             autoComplete="off"
             required
           />
+        </div>
+
+        <div className="tf-field">
+          <label className="tf-label" htmlFor="repo-branch">
+            Branch (latest code){" "}
+            <span className="tf-req" aria-hidden="true">*</span>
+          </label>
+          <input
+            id="repo-branch"
+            className="tf-input"
+            value={branch}
+            onChange={(e) => setBranch(e.target.value)}
+            placeholder="main"
+            autoComplete="off"
+            required
+          />
+          <span className="tf-hint">
+            <GitBranch aria-hidden="true" />
+            Specs are pulled from, branched off, and PR&apos;d back into this
+            branch.
+          </span>
         </div>
 
         <div className="tf-field">

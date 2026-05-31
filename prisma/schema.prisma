@@ -40,6 +40,7 @@ model Repository {
   pat           String // encrypted Personal Access Token
   organization  String? // required for ADO, null for GitHub
   outputFolder  String // e.g. "tests/my-web-app"
+  branch        String      @default("main") // branch with latest code: pulled from, branched off, and PR'd into
   applicationId String
   application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   tasks         TestTask[]

@@ -40,3 +40,9 @@ yarn-error.log*
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# local git workspaces (each is its own clone)
+/workspace/
+
+# ephemeral specs written for "run script locally" (headed Playwright runs)
+/.testforge-runs/

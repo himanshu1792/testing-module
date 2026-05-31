@@ -4,6 +4,8 @@ import { getApplication } from "../applications";
 import { getRepository } from "../repositories";
 import { getAcceptanceCriteria } from "../ado-work-items";
 import { parseAdoUrl } from "../repository-utils";
+import { workspacePathFor } from "../workspace";
+import { syncWorkspace } from "../workspace-git";
 import { runPromptBuilder } from "../agents/prompt-builder";
 import { runScriptGenerator } from "../agents/script-generator";
 import { runReviewer } from "../agents/reviewer";
@@ -65,6 +67,8 @@ export async function runE2EPipeline(taskId: string): Promise<void> {
     console.log(`[${taskId}] ${stage}: ${message}`);
   };
 
+  const workspacePath = workspacePathFor(application.name);
+
   const ctx: HeadlessContext = {
     taskId,
     kind: "e2e",
@@ -80,8 +84,21 @@ export async function runE2EPipeline(taskId: string): Promise<void> {
     outputFolder: repository.outputFolder,
     repositoryPat: repository.pat,
     repositoryOrganization: repository.organization,
+    branch: repository.branch,
+    workspacePath,
     log,
   };
+
+  // --- Pre-hook: stash local changes + pull latest from the target branch ---
+  ctx.log("workspace_sync", `Syncing ${workspacePath} (branch ${repository.branch})`);
+  await syncWorkspace({
+    workspacePath,
+    repoUrl: repository.repoUrl,
+    provider: repository.provider,
+    pat: repository.pat,
+    organization: repository.organization,
+    branch: repository.branch,
+  });
 
   // --- Prompt Builder ---
   const refinedPrompt = await runPromptBuilder(ctx);

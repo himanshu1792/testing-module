@@ -1,13 +1,14 @@
-import { createGitHubPr, createAdoPr } from "./git-providers";
+import { commitAndPushSpec } from "../workspace-git";
+import { openGitHubPr, openAdoPr } from "./git-providers";
 import type { HeadlessContext } from "../pipelines/context";
 
 /**
  * Agent: PR Creator (headless)
  *
- * Creates a branch, pushes the test script, and opens a PR. Routes to GitHub or
- * Azure DevOps based on the repository provider. Ported from the source; the
- * scenario id is now `ctx.taskId`, emit is replaced by `ctx.log`, and the test
- * type is simplified to "e2e" | "exploratory".
+ * Disk-first flow: writes the generated spec into the local workspace clone,
+ * commits + pushes a feature branch off the repository's configured branch
+ * (ctx.branch), then opens a PR back into that branch. Routes to GitHub or
+ * Azure DevOps based on the repository provider.
  */
 export async function runPrCreator(
   ctx: HeadlessContext,
@@ -18,7 +19,7 @@ export async function runPrCreator(
   const typeLabel = isExploratory ? "exploratory test" : "e2e test";
   const branchName = `testforge/${testType}-${ctx.taskId.slice(0, 8)}`;
   const fileName = generateFileName(ctx);
-  const filePath = ctx.outputFolder ? `${ctx.outputFolder}/${fileName}` : fileName;
+  const relFilePath = ctx.outputFolder ? `${ctx.outputFolder}/${fileName}` : fileName;
   const prTitle = `test: add ${typeLabel} — ${ctx.inputText.slice(0, 50)}`;
   const prBody = [
     `## TestForge Auto-Generated ${isExploratory ? "Exploratory" : "E2E"} Test`,
@@ -30,17 +31,30 @@ export async function runPrCreator(
   ].join("\n");
 
   ctx.log("pr_creator", `Creating branch: ${branchName}`);
-  ctx.log("pr_creator", `Pushing ${fileName} to ${filePath}...`);
+  ctx.log("pr_creator", `Pushing ${fileName} to ${relFilePath}...`);
+
+  // Disk-first: write -> commit -> push the feature branch off ctx.branch.
+  await commitAndPushSpec({
+    workspacePath: ctx.workspacePath,
+    provider: ctx.repositoryProvider,
+    repoUrl: ctx.repositoryUrl,
+    pat: ctx.repositoryPat,
+    organization: ctx.repositoryOrganization,
+    baseBranch: ctx.branch,
+    newBranch: branchName,
+    relFilePath,
+    fileContent: script,
+    commitMessage: prTitle,
+  });
 
   let prUrl: string;
 
   if (ctx.repositoryProvider === "github") {
-    const result = await createGitHubPr(
+    const result = await openGitHubPr(
       ctx.repositoryUrl,
       ctx.repositoryPat,
       branchName,
-      filePath,
-      script,
+      ctx.branch,
       prTitle,
       prBody
     );
@@ -49,13 +63,12 @@ export async function runPrCreator(
     if (!ctx.repositoryOrganization) {
       throw new Error("Azure DevOps requires an organization name");
     }
-    const result = await createAdoPr(
+    const result = await openAdoPr(
       ctx.repositoryUrl,
       ctx.repositoryPat,
       ctx.repositoryOrganization,
       branchName,
-      filePath,
-      script,
+      ctx.branch,
       prTitle,
       prBody
     );

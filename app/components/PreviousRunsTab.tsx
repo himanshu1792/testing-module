@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import useSWR from "swr";
 import {
   History,
@@ -14,6 +15,7 @@ import {
   XCircle,
   WifiOff,
   Inbox,
+  Play,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -25,6 +27,7 @@ import {
 } from "./types";
 import { TableSkeleton } from "./Skeleton";
 import EmptyState from "./EmptyState";
+import RunScriptModal from "./RunScriptModal";
 
 /** Truncate long input text for the table cell. */
 function truncate(text: string, max = 60): string {
@@ -62,6 +65,9 @@ export default function PreviousRunsTab() {
 
   const tasks = data?.tasks ?? [];
 
+  // The run whose script is currently open in the local-run modal (or none).
+  const [runTask, setRunTask] = useState<Task | null>(null);
+
   return (
     <section className="tf-card">
       <div className="tf-card-head">
@@ -77,7 +83,7 @@ export default function PreviousRunsTab() {
       </div>
 
       {isLoading && !data ? (
-        <TableSkeleton columns={[1, 3, 1.6, 1.2, 1.2, 1, 1.4]} rows={5} />
+        <TableSkeleton columns={[1, 3, 1.6, 1.2, 1.2, 1, 1.4, 1]} rows={5} />
       ) : error ? (
         <EmptyState
           icon={WifiOff}
@@ -103,28 +109,41 @@ export default function PreviousRunsTab() {
                   <th className="tf-th">Stage</th>
                   <th className="tf-th">PR</th>
                   <th className="tf-th">Created</th>
+                  <th className="tf-th">Run</th>
                 </tr>
               </thead>
               <tbody>
                 {tasks.map((task) => (
-                  <TaskRow key={task.id} task={task} />
+                  <TaskRow key={task.id} task={task} onRun={setRunTask} />
                 ))}
               </tbody>
             </table>
           </div>
         </div>
       )}
+
+      {runTask && (
+        <RunScriptModal task={runTask} onClose={() => setRunTask(null)} />
+      )}
     </section>
   );
 }
 
-function TaskRow({ task }: { task: Task }) {
+function TaskRow({
+  task,
+  onRun,
+}: {
+  task: Task;
+  onRun: (task: Task) => void;
+}) {
   const status = badgeModifier(task.status);
   const failed = status === "failed";
   const exploratory = task.kind === "exploratory";
   const kindLabel = exploratory ? "Exploratory" : "E2E";
   const KindIcon = exploratory ? Compass : Route;
   const StatusIcon = STATUS_ICON[status];
+  // Run is only actionable once the backend reports a generated script.
+  const canRun = task.hasScript === true;
 
   return (
     <tr>
@@ -187,6 +206,26 @@ function TaskRow({ task }: { task: Task }) {
           <Clock aria-hidden="true" />
           {shortTime(task.createdAt)}
         </span>
+      </td>
+      <td className="tf-td">
+        <button
+          type="button"
+          className="tf-btn tf-btn--ghost tf-runbtn"
+          onClick={() => onRun(task)}
+          disabled={!canRun}
+          aria-disabled={!canRun}
+          aria-label={
+            canRun
+              ? `Run script for ${task.application?.name ?? "this run"}`
+              : "No generated script for this run yet"
+          }
+          title={
+            canRun ? "Run this script locally" : "No generated script for this run yet."
+          }
+        >
+          <Play aria-hidden="true" />
+          Run
+        </button>
       </td>
     </tr>
   );

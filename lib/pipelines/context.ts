@@ -22,5 +22,7 @@ export interface HeadlessContext {
   outputFolder: string;
   repositoryPat: string;
   repositoryOrganization: string | null;
+  branch: string;
+  workspacePath: string;
   log: (stage: string, message: string) => void;
 }

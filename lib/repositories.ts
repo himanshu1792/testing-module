@@ -14,6 +14,7 @@ export type RepositoryInput = {
   pat: string;
   organization: string | null;
   outputFolder: string;
+  branch: string;
   applicationId: string;
   tenantId?: string;
 };
@@ -26,6 +27,7 @@ export type RepositoryView = {
   pat: string;
   organization: string | null;
   outputFolder: string;
+  branch: string;
   applicationId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -37,6 +39,7 @@ export type RepositoryListItem = {
   repoUrl: string;
   organization: string | null;
   outputFolder: string;
+  branch: string;
   applicationId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -131,6 +134,7 @@ export async function createRepository(input: RepositoryInput) {
       pat: encrypt(input.pat),
       organization: input.organization,
       outputFolder: input.outputFolder,
+      branch: input.branch ?? "main",
       applicationId: input.applicationId,
     },
   });
@@ -146,6 +150,7 @@ export async function listRepositories(applicationId: string): Promise<Repositor
       repoUrl: true,
       organization: true,
       outputFolder: true,
+      branch: true,
       applicationId: true,
       createdAt: true,
       updatedAt: true,

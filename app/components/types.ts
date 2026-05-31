@@ -22,6 +22,7 @@ export interface Repository {
   repoUrl: string;
   organization?: string | null;
   outputFolder?: string;
+  branch?: string;
   applicationId: string;
 }
 
@@ -39,6 +40,8 @@ export interface Task {
   updatedAt: string;
   application: { name: string };
   repository: { provider: string; repoUrl: string };
+  /** True when this run produced a Playwright script that can be re-run locally. */
+  hasScript?: boolean;
 }
 
 export interface ApplicationsResponse {

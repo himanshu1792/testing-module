@@ -22,6 +22,8 @@ export type TaskListItem = {
   stage: string | null;
   prUrl: string | null;
   errorMessage: string | null;
+  /** Whether this run has a non-empty generated script that can be re-run. */
+  hasScript: boolean;
   applicationId: string;
   repositoryId: string;
   createdAt: Date;
@@ -49,7 +51,9 @@ export async function createTask(input: CreateTaskInput) {
 
 /** List tasks (most recent first) for the Previous Runs tab. */
 export async function listTasks(tenantId: string = DEFAULT_TENANT): Promise<TaskListItem[]> {
-  return prisma.testTask.findMany({
+  // `generatedScript` is selected only to derive the `hasScript` flag — the
+  // script body is stripped below and never shipped to the client.
+  const rows = await prisma.testTask.findMany({
     where: { tenantId },
     orderBy: { createdAt: "desc" },
     select: {
@@ -60,6 +64,7 @@ export async function listTasks(tenantId: string = DEFAULT_TENANT): Promise<Task
       stage: true,
       prUrl: true,
       errorMessage: true,
+      generatedScript: true,
       applicationId: true,
       repositoryId: true,
       createdAt: true,
@@ -69,7 +74,12 @@ export async function listTasks(tenantId: string = DEFAULT_TENANT): Promise<Task
       application: { select: { name: true } },
       repository: { select: { provider: true, repoUrl: true } },
     },
-  }) as Promise<TaskListItem[]>;
+  });
+
+  return rows.map(({ generatedScript, ...rest }) => ({
+    ...rest,
+    hasScript: Boolean(generatedScript && generatedScript.trim()),
+  }));
 }
 
 /** Get the raw task row (used by the worker to resolve app + repo). */
